@@ -51,6 +51,7 @@ import io.netty.util.CharsetUtil;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.kitteh.irc.client.library.event.client.ClientConnectionClosedEvent;
 import org.kitteh.irc.client.library.exception.KittehConnectionException;
+import org.kitteh.irc.client.library.util.PinningManager;
 import org.kitteh.irc.client.library.util.QueueProcessingThread;
 import org.kitteh.irc.client.library.util.ToStringer;
 
@@ -176,6 +177,11 @@ final class NettyManager {
                     if (factory == null) {
                         factory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
                         factory.init((KeyStore) null);
+                    }
+                    if (factory instanceof PinningManager) {
+                        PinningManager pinningManager = (PinningManager) factory;
+                        // Do *NOT* reverse lookup here.
+                        pinningManager.setCurrentHostname(this.client.getConfig().get(Config.SERVER_ADDRESS).getHostString());
                     }
                     SslContext sslContext = SslContextBuilder.forClient().trustManager(factory).keyManager(keyCertChainFile, keyFile, keyPassword).build();
                     this.channel.pipeline().addFirst(sslContext.newHandler(this.channel.alloc()));
